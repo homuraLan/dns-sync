@@ -1,0 +1,32 @@
+name = "dns-sync-worker"
+main = "src/index.js"
+compatibility_date = "2023-05-26"
+
+# 触发器配置
+# 默认每6小时执行一次同步
+# [triggers]
+# crons = ["0 */6 * * *"]
+
+# KV存储配置示例（二选一：KV或D1）
+# 替换为你自己的命名空间ID
+# [kv_namespaces]
+# [[kv_namespaces]]
+# binding = "KV"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# preview_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # 开发环境使用
+
+# D1数据库配置示例（二选一：KV或D1）
+# 替换为你自己的数据库ID
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "dns_sync_db"
+# database_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# 环境变量配置
+# [vars]
+# PASSWORD = "your_secure_password"  # 推荐使用环境变量注入或Secret管理，不要直接在此处设置
+
+# 开发环境配置
+[dev]
+port = 8787
+local_protocol = "http" 

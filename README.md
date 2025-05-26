@@ -22,8 +22,8 @@
 
 1. 克隆此仓库
    ```
-   git clone https://github.com/yourusername/dns-sync-worker.git
-   cd dns-sync-worker
+   git clone https://github.com/homuraLan/dns-sync.git
+   cd dns-sync
    ```
 
 2. 安装依赖
@@ -35,7 +35,7 @@
 
    #### 一键部署到Cloudflare Workers
    
-   [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/yourusername/dns-sync-worker)
+   [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/homuraLan/dns-sync)
 
    #### 或者使用Wrangler手动部署
    ```
@@ -105,7 +105,7 @@
 
 ## 使用说明
 
-1. 访问Worker的URL（例如：https://dns-sync-worker.yourdomain.workers.dev）
+1. 访问Worker的URL（例如：https://dns-sync.yourdomain.workers.dev）
 2. 使用设置的密码登录
 3. 添加DNS提供商配置
 4. 设置同步配置，选择源提供商和目标提供商

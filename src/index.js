@@ -43,9 +43,6 @@ app.get('/', (c) => {
   return c.html(renderLoginPage());
 });
 
-// 受保护的路由
-app.use('/admin/*', auth);
-
 // 管理仪表盘
 app.get('/admin', async (c) => {
   const storage = getStorage(c.env);

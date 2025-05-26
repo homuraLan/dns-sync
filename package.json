@@ -17,11 +17,11 @@
   "license": "ISC",
   "description": "DNS同步工具，自动将一个DNS提供商的记录同步到其他提供商",
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20240517.0",
-    "hono": "^3.12.0",
-    "itty-router": "^4.0.25"
+    "@cloudflare/workers-types": "^4.20250525.0",
+    "hono": "^3.12.12",
+    "itty-router": "^4.2.2"
   },
   "devDependencies": {
-    "wrangler": "^3.32.0"
+    "wrangler": "^4.16.1"
   }
 } 

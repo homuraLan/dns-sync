@@ -69,13 +69,10 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
         
         <!-- 主要内容 -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <!-- DNS提供商管理 -->
+          <!-- DNS提供商列表 -->
           <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div class="px-4 py-5 sm:px-6">
               <h2 class="text-lg font-medium text-gray-900">DNS提供商</h2>
-              <a href="/admin/providers/new" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                添加提供商
-              </a>
             </div>
             <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
               <div class="overflow-x-auto">
@@ -92,7 +89,7 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
                     <template x-if="providers.length === 0">
                       <tr>
                         <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
-                          暂无DNS提供商，请添加
+                          暂无DNS提供商，请在下方添加配置
                         </td>
                       </tr>
                     </template>
@@ -102,7 +99,6 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="getProviderTypeName(provider.type)"></td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="provider.domain"></td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <a :href="'/admin/providers/' + provider.id" class="text-indigo-600 hover:text-indigo-900 mr-3">编辑</a>
                           <button @click="deleteProvider(provider.id)" class="text-red-600 hover:text-red-900">删除</button>
                         </td>
                       </tr>
@@ -116,38 +112,66 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
           <!-- 同步配置 -->
           <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="px-4 py-5 sm:px-6">
-              <h2 class="text-lg font-medium text-gray-900">同步配置</h2>
+              <h2 class="text-lg font-medium text-gray-900">添加配置</h2>
             </div>
             <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
               <form @submit.prevent="saveSyncConfig">
                 <div class="space-y-6">
                   <div>
-                    <label for="sourceProvider" class="block text-sm font-medium text-gray-700">源DNS提供商</label>
-                    <select id="sourceProvider" x-model="syncConfig.sourceProviderId" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                      <option value="">请选择源提供商</option>
-                      <template x-for="provider in providers" :key="provider.id">
-                        <option :value="provider.id" x-text="provider.name"></option>
+                    <label for="providerType" class="block text-sm font-medium text-gray-700">DNS提供商类型</label>
+                    <select id="providerType" x-model="newProvider.type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                      <option value="">请选择提供商类型</option>
+                      <template x-for="type in providerTypes" :key="type.id">
+                        <option :value="type.id" x-text="type.name"></option>
                       </template>
                     </select>
                   </div>
                   
                   <div>
-                    <label class="block text-sm font-medium text-gray-700">目标DNS提供商</label>
-                    <div class="mt-2 space-y-2">
-                      <template x-for="provider in providers" :key="provider.id">
-                        <div class="flex items-center" x-show="provider.id !== syncConfig.sourceProviderId">
-                          <input :id="'target-' + provider.id" type="checkbox" :value="provider.id" 
-                                 x-model="syncConfig.targetProviderIds"
-                                 class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                          <label :for="'target-' + provider.id" class="ml-2 block text-sm text-gray-900" x-text="provider.name"></label>
-                        </div>
-                      </template>
-                    </div>
+                    <label for="providerName" class="block text-sm font-medium text-gray-700">名称</label>
+                    <input type="text" id="providerName" x-model="newProvider.name" 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                           placeholder="例如：我的Cloudflare账号">
                   </div>
                   
                   <div>
-                    <label for="syncInterval" class="block text-sm font-medium text-gray-700">同步选项</label>
+                    <label for="domains" class="block text-sm font-medium text-gray-700">域名列表</label>
+                    <textarea id="domains" x-model="newProvider.domains" rows="3"
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                              placeholder="每行一个域名，支持通配符，例如：
+example.com
+*.example.org
+test.com"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">每行一个域名，留空则同步所有域名</p>
+                  </div>
+                  
+                  <div>
+                    <label for="apiKey" class="block text-sm font-medium text-gray-700">API密钥</label>
+                    <input type="text" id="apiKey" x-model="newProvider.apiKey" 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                           placeholder="API Key / Token">
+                  </div>
+                  
+                  <div>
+                    <label for="secretKey" class="block text-sm font-medium text-gray-700">API密钥(Secret)</label>
+                    <input type="password" id="secretKey" x-model="newProvider.secretKey" 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                           placeholder="API Secret (如有)">
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">同步选项</label>
                     <div class="mt-2 space-y-2">
+                      <div class="flex items-center">
+                        <input id="isSource" type="checkbox" x-model="newProvider.isSource"
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="isSource" class="ml-2 block text-sm text-gray-900">设为源提供商</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="isTarget" type="checkbox" x-model="newProvider.isTarget"
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="isTarget" class="ml-2 block text-sm text-gray-900">设为目标提供商</label>
+                      </div>
                       <div class="flex items-center">
                         <input id="overwriteAll" type="checkbox" x-model="syncConfig.syncOptions.overwriteAll"
                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
@@ -163,7 +187,7 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
                   
                   <div class="flex justify-between">
                     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                      保存配置
+                      添加配置
                     </button>
                     <button type="button" @click="runSync" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                       立即同步
@@ -228,6 +252,15 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
                 deleteExtra: false
               }
             })},
+            newProvider: {
+              type: '',
+              name: '',
+              domains: '',
+              apiKey: '',
+              secretKey: '',
+              isSource: false,
+              isTarget: false
+            },
             syncHistory: ${JSON.stringify(syncHistory)},
             message: '',
             messageType: 'success',
@@ -244,21 +277,88 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
             
             async saveSyncConfig() {
               try {
-                const response = await fetch('/admin/api/sync-config', {
+                // 验证表单
+                if (!this.newProvider.type) {
+                  throw new Error('请选择DNS提供商类型');
+                }
+                if (!this.newProvider.name) {
+                  throw new Error('请输入提供商名称');
+                }
+                if (!this.newProvider.apiKey) {
+                  throw new Error('请输入API密钥');
+                }
+                
+                // 处理域名列表
+                const domainList = this.newProvider.domains.trim() ? 
+                  this.newProvider.domains.split('\n').map(d => d.trim()).filter(d => d) : 
+                  [];
+                
+                // 创建提供商对象
+                const providerData = {
+                  type: this.newProvider.type,
+                  name: this.newProvider.name,
+                  domain: domainList.length > 0 ? domainList.join(', ') : '所有域名',
+                  domains: domainList,
+                  apiKey: this.newProvider.apiKey,
+                  secretKey: this.newProvider.secretKey
+                };
+                
+                // 保存提供商
+                const response = await fetch('/admin/api/providers', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
                   },
-                  body: JSON.stringify(this.syncConfig)
+                  body: JSON.stringify(providerData)
                 });
                 
-                if (response.ok) {
-                  this.message = '同步配置已保存';
-                  this.messageType = 'success';
-                } else {
+                if (!response.ok) {
                   const error = await response.json();
                   throw new Error(error.message || '保存配置失败');
                 }
+                
+                const result = await response.json();
+                const newProvider = result.provider || providerData;
+                
+                // 更新提供商列表
+                this.providers.push(newProvider);
+                
+                // 更新同步配置
+                if (this.newProvider.isSource) {
+                  this.syncConfig.sourceProviderId = newProvider.id;
+                }
+                
+                if (this.newProvider.isTarget) {
+                  if (!this.syncConfig.targetProviderIds) {
+                    this.syncConfig.targetProviderIds = [];
+                  }
+                  this.syncConfig.targetProviderIds.push(newProvider.id);
+                }
+                
+                // 保存同步配置
+                if (this.newProvider.isSource || this.newProvider.isTarget) {
+                  await fetch('/admin/api/sync-config', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.syncConfig)
+                  });
+                }
+                
+                // 重置表单
+                this.newProvider = {
+                  type: '',
+                  name: '',
+                  domains: '',
+                  apiKey: '',
+                  secretKey: '',
+                  isSource: false,
+                  isTarget: false
+                };
+                
+                this.message = '配置已添加';
+                this.messageType = 'success';
               } catch (error) {
                 this.message = error.message;
                 this.messageType = 'error';
@@ -303,6 +403,19 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
                 
                 if (response.ok) {
                   this.providers = this.providers.filter(p => p.id !== id);
+                  
+                  // 如果删除的是源提供商，更新同步配置
+                  if (this.syncConfig.sourceProviderId === id) {
+                    this.syncConfig.sourceProviderId = '';
+                    await this.updateSyncConfig();
+                  }
+                  
+                  // 如果删除的是目标提供商，更新同步配置
+                  if (this.syncConfig.targetProviderIds && this.syncConfig.targetProviderIds.includes(id)) {
+                    this.syncConfig.targetProviderIds = this.syncConfig.targetProviderIds.filter(pid => pid !== id);
+                    await this.updateSyncConfig();
+                  }
+                  
                   this.message = 'DNS提供商已删除';
                   this.messageType = 'success';
                 } else {
@@ -312,6 +425,20 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
               } catch (error) {
                 this.message = error.message;
                 this.messageType = 'error';
+              }
+            },
+            
+            async updateSyncConfig() {
+              try {
+                await fetch('/admin/api/sync-config', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(this.syncConfig)
+                });
+              } catch (error) {
+                console.error('更新同步配置失败:', error);
               }
             },
             

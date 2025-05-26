@@ -51,6 +51,24 @@ export async function getDNSProviderWithCredentials(storage, id) {
 export async function saveDNSProvider(storage, providerData) {
   const providers = await getDNSProviders(storage);
   
+  // 处理域名列表
+  if (providerData.domains && Array.isArray(providerData.domains)) {
+    // 已经是数组，保持不变
+  } else if (typeof providerData.domains === 'string') {
+    // 如果是字符串，按行分割
+    providerData.domains = providerData.domains.split('\n').map(d => d.trim()).filter(d => d);
+  } else {
+    // 默认为空数组
+    providerData.domains = [];
+  }
+  
+  // 设置显示用的domain字段
+  if (providerData.domains && providerData.domains.length > 0) {
+    providerData.domain = providerData.domains.join(', ');
+  } else {
+    providerData.domain = '所有域名';
+  }
+  
   // 如果提供了ID，则更新现有提供商
   if (providerData.id) {
     const index = providers.findIndex(p => p.id === providerData.id);
@@ -94,7 +112,7 @@ export async function saveDNSProvider(storage, providerData) {
     }
   }
   
-  return providerData;
+  return { success: true, provider: providerData };
 }
 
 // 删除DNS提供商

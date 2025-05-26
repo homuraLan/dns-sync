@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { basicAuth } from 'hono/basic-auth';
-import { serveStatic } from 'hono/cloudflare-workers';
 
 // 导入DNS同步模块
 import { syncDNSRecords, getSyncConfig, saveSyncConfig, getSyncHistory } from './dns/sync.js';
@@ -31,8 +30,13 @@ const getStorage = (env) => {
   return env.DB || env.KV;
 };
 
-// 静态资源
-app.get('/static/*', serveStatic({ root: './' }));
+// 静态资源 - 移除serveStatic，使用简单的响应处理
+app.get('/static/*', (c) => {
+  const path = c.req.path.replace('/static/', '');
+  // 简单处理，返回404
+  return new Response('Not Found', { status: 404 });
+  // 注意：如果需要真正提供静态文件，应该使用其他方式或将静态资源存储在KV中
+});
 
 // 登录页面
 app.get('/', (c) => {

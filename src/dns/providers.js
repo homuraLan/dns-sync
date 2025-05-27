@@ -8,7 +8,7 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
-// 解析域名列表，支持指定记录类型
+// 解析域名列表，支持指定记录类型和处理规则
 function parseDomainList(domainsString) {
   if (!domainsString) return [];
   
@@ -22,19 +22,38 @@ function parseDomainList(domainsString) {
       // *.example.com:CNAME - 通配符域名的特定记录类型
       // A - 所有域名的A记录
       // MX,TXT - 所有域名的MX和TXT记录
+      // *:Worker:CNAME:Abroad - 新格式：域名:处理方式:目标记录类型:地区
       
       if (line.includes(':')) {
-        // 包含冒号，格式为 域名:记录类型
         const parts = line.split(':');
         const domain = parts[0].trim();
-        const recordTypes = parts[1] ? 
-          parts[1].split(',').map(type => type.trim().toUpperCase()).filter(type => type) : 
-          [];
         
-        return {
-          domain,
-          recordTypes: recordTypes.length > 0 ? recordTypes : null
-        };
+        // 检查是否为新的扩展格式：域名:处理方式:目标记录类型:地区
+        if (parts.length >= 3) {
+          const processor = parts[1].trim(); // Worker, Direct等
+          const targetRecordType = parts[2].trim().toUpperCase();
+          const region = parts[3] ? parts[3].trim() : 'Abroad'; // 默认为Abroad
+          
+          return {
+            domain,
+            processor,
+            targetRecordType,
+            region,
+            recordTypes: null, // 保持兼容性
+            isExtendedFormat: true
+          };
+        } else {
+          // 原有格式：域名:记录类型
+          const recordTypes = parts[1] ? 
+            parts[1].split(',').map(type => type.trim().toUpperCase()).filter(type => type) : 
+            [];
+          
+          return {
+            domain,
+            recordTypes: recordTypes.length > 0 ? recordTypes : null,
+            isExtendedFormat: false
+          };
+        }
       } else {
         // 不包含冒号，检查是否为纯记录类型
         const supportedTypes = getSupportedRecordTypes();
@@ -44,13 +63,15 @@ function parseDomainList(domainsString) {
           // 全部都是有效的记录类型，表示所有域名的这些记录类型
           return {
             domain: '*', // 使用通配符表示所有域名
-            recordTypes: types
+            recordTypes: types,
+            isExtendedFormat: false
           };
         } else {
           // 当作域名处理
           return {
             domain: line,
-            recordTypes: null // null表示所有类型
+            recordTypes: null, // null表示所有类型
+            isExtendedFormat: false
           };
         }
       }
@@ -65,6 +86,13 @@ function formatDomainDisplay(domains) {
     if (typeof item === 'string') {
       return item;
     }
+    
+    // 新的扩展格式
+    if (item.isExtendedFormat) {
+      return `${item.domain}:${item.processor}:${item.targetRecordType}:${item.region}`;
+    }
+    
+    // 原有格式
     if (item.recordTypes && item.recordTypes.length > 0) {
       return `${item.domain}:${item.recordTypes.join(',')}`;
     }

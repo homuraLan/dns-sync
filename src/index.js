@@ -201,18 +201,16 @@ export default {
     return app.fetch(request, env, ctx);
   },
   
-  // 定时触发的CRON表达式从环境变量获取，默认每6小时一次
-  scheduled: {
-    cron: (env) => env.CRON || "0 */6 * * *",
-    async handler(event, env, ctx) {
-      try {
-        console.log('Running scheduled DNS sync task');
-        const storage = getStorage(env);
-        await syncDNSRecords(storage);
-        console.log('DNS sync completed successfully');
-      } catch (error) {
-        console.error('DNS sync failed:', error);
-      }
+  // 定时触发的scheduled事件处理器
+  async scheduled(controller, env, ctx) {
+    try {
+      console.log('Running scheduled DNS sync task');
+      const storage = getStorage(env);
+      const result = await syncDNSRecords(storage);
+      console.log('DNS sync completed successfully:', result);
+    } catch (error) {
+      console.error('DNS sync failed:', error);
+      // 可以在这里添加错误通知逻辑
     }
   }
 }; 

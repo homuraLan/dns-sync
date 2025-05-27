@@ -98,7 +98,36 @@ export async function fetchDNSRecords(provider) {
     }
     
     // 根据域名配置过滤记录类型
-    return filterRecordsByDomainsAndTypes(records, provider.domains);
+    const filteredRecords = filterRecordsByDomainsAndTypes(records, provider.domains);
+    
+    // 应用记录转换（处理扩展格式）
+    const transformedRecords = filteredRecords.map(record => {
+      // 找到匹配的域名配置
+      const matchingDomainConfig = provider.domains?.find(domainConfig => {
+        const domain = typeof domainConfig === 'string' ? domainConfig : domainConfig.domain;
+        
+        if (domain === '*') {
+          return true;
+        } else if (domain.startsWith('*.')) {
+          const escaped = domain.substring(2).replace(/\./g, '\\.');
+          const pattern = new RegExp(`^.*\\.${escaped}$`, 'i');
+          return pattern.test(record.zone_name) || pattern.test(record.name);
+        } else {
+          const escaped = domain.replace(/\./g, '\\.');
+          const pattern = new RegExp(`^${escaped}$`, 'i');
+          return pattern.test(record.zone_name) || pattern.test(record.name);
+        }
+      });
+      
+      // 如果找到匹配的配置且是扩展格式，进行转换
+      if (matchingDomainConfig && matchingDomainConfig.isExtendedFormat) {
+        return processRecordTransformation(record, matchingDomainConfig);
+      }
+      
+      return record;
+    });
+    
+    return transformedRecords;
   } catch (error) {
     console.error(`获取${provider.name}的DNS记录失败:`, error);
     throw new Error(`获取${provider.name}的DNS记录失败: ${error.message}`);
@@ -162,7 +191,7 @@ function filterRecordsByDomains(records, domains) {
   });
 }
 
-// 根据域名和记录类型过滤记录
+// 根据域名和记录类型过滤记录，支持扩展格式
 function filterRecordsByDomainsAndTypes(records, domains) {
   // 如果没有指定域名，返回所有记录
   if (!domains || domains.length === 0) {
@@ -193,13 +222,106 @@ function filterRecordsByDomainsAndTypes(records, domains) {
       
       // 检查记录类型匹配
       let typeMatches = true;
-      if (recordTypes && recordTypes.length > 0) {
+      
+      // 处理扩展格式
+      if (domainConfig.isExtendedFormat) {
+        // 对于扩展格式，我们需要根据processor来决定如何处理
+        // 这里先简单匹配原始记录类型，后续在同步时进行转换
+        if (domainConfig.processor === 'Worker') {
+          // Worker处理：可能需要特殊的记录类型匹配逻辑
+          // 暂时匹配所有记录，在同步时进行转换
+          typeMatches = true;
+        } else {
+          // 其他处理方式，使用目标记录类型匹配
+          typeMatches = record.type === domainConfig.targetRecordType;
+        }
+      } else if (recordTypes && recordTypes.length > 0) {
+        // 原有格式的记录类型匹配
         typeMatches = recordTypes.includes(record.type);
       }
       
       return domainMatches && typeMatches;
     });
   });
+}
+
+// 处理记录转换（根据扩展格式规则）
+function processRecordTransformation(record, domainConfig) {
+  // 如果不是扩展格式，直接返回原记录
+  if (!domainConfig.isExtendedFormat) {
+    return record;
+  }
+  
+  // 根据processor类型进行处理
+  switch (domainConfig.processor) {
+    case 'Worker':
+      // Worker处理：将记录转换为指定的目标记录类型
+      return {
+        ...record,
+        type: domainConfig.targetRecordType,
+        // 根据地区设置不同的处理逻辑
+        content: transformWorkerContent(record, domainConfig.targetRecordType, domainConfig.region),
+        // 添加标记表示这是经过处理的记录
+        isTransformed: true,
+        originalType: record.type,
+        processor: domainConfig.processor,
+        region: domainConfig.region
+      };
+    
+    case 'Direct':
+      // 直接处理：保持原记录但可能改变类型
+      return {
+        ...record,
+        type: domainConfig.targetRecordType,
+        isTransformed: true,
+        originalType: record.type,
+        processor: domainConfig.processor,
+        region: domainConfig.region
+      };
+    
+    default:
+      // 未知处理方式，返回原记录
+      console.warn(`未知的处理方式: ${domainConfig.processor}`);
+      return record;
+  }
+}
+
+// Worker内容转换函数
+function transformWorkerContent(record, targetType, region) {
+  // 根据目标记录类型和地区进行内容转换
+  switch (targetType) {
+    case 'CNAME':
+      // 转换为CNAME记录
+      if (region === 'Abroad') {
+        // 海外地区的Worker域名
+        return `${record.name}.workers.dev`;
+      } else {
+        // 其他地区的处理逻辑
+        return `${record.name}.${region.toLowerCase()}.workers.dev`;
+      }
+    
+    case 'A':
+      // 转换为A记录（Worker的IP地址）
+      if (region === 'Abroad') {
+        // 海外Cloudflare Worker的IP（示例）
+        return '104.21.0.0';
+      } else {
+        // 其他地区的IP
+        return '172.67.0.0';
+      }
+    
+    case 'AAAA':
+      // 转换为AAAA记录（Worker的IPv6地址）
+      if (region === 'Abroad') {
+        return '2606:4700::6810:0000';
+      } else {
+        return '2606:4700::ac43:0000';
+      }
+    
+    default:
+      // 其他类型保持原内容
+      return record.content;
+  }
 }
 
 // Cloudflare适配器

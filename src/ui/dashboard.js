@@ -831,14 +831,24 @@ export function renderDashboard(providers = [], syncConfig = null, syncHistory =
                   
                   <div>
                         <label for="domains" class="block text-sm font-medium text-gray-700">包含域名列表</label>
-                        <textarea id="domains" x-model="newProvider.domains" rows="4"
+                        <textarea id="domains" x-model="newProvider.domains" rows="6"
                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                   placeholder="每行一个域名或记录类型，例如：
 example.com
 *.example.org:A,AAAA
 test.com:CNAME,TXT
-A,MX"></textarea>
-                        <p class="mt-1 text-xs text-gray-500">支持格式：域名、域名:记录类型、纯记录类型（如A,MX表示所有域名的A和MX记录），留空则同步所有域名</p>
+A,MX
+*:Worker:CNAME:Abroad
+api.example.com:Worker:A:China"></textarea>
+                        <p class="mt-1 text-xs text-gray-500">
+                          支持格式：<br>
+                          • 域名：example.com<br>
+                          • 域名:记录类型：example.com:A,AAAA<br>
+                          • 纯记录类型：A,MX（所有域名的A和MX记录）<br>
+                          • 扩展格式：域名:处理方式:目标记录类型:地区<br>
+                          &nbsp;&nbsp;例如：*:Worker:CNAME:Abroad（将Worker处理成CNAME记录，地区默认为Abroad）<br>
+                          留空则同步所有域名
+                        </p>
                       </div>
                       
                       <div>

@@ -8,6 +8,77 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
+// 解析域名列表，支持指定记录类型
+function parseDomainList(domainsString) {
+  if (!domainsString) return [];
+  
+  return domainsString.split('\n')
+    .map(line => line.trim())
+    .filter(line => line)
+    .map(line => {
+      // 支持格式：
+      // example.com - 指定域名
+      // example.com:A,AAAA - 指定域名的特定记录类型
+      // *.example.com:CNAME - 通配符域名的特定记录类型
+      // A - 所有域名的A记录
+      // MX,TXT - 所有域名的MX和TXT记录
+      
+      if (line.includes(':')) {
+        // 包含冒号，格式为 域名:记录类型
+        const parts = line.split(':');
+        const domain = parts[0].trim();
+        const recordTypes = parts[1] ? 
+          parts[1].split(',').map(type => type.trim().toUpperCase()).filter(type => type) : 
+          [];
+        
+        return {
+          domain,
+          recordTypes: recordTypes.length > 0 ? recordTypes : null
+        };
+      } else {
+        // 不包含冒号，检查是否为纯记录类型
+        const supportedTypes = getSupportedRecordTypes();
+        const types = line.split(',').map(type => type.trim().toUpperCase()).filter(type => type);
+        
+        if (types.length > 0 && types.every(type => supportedTypes.includes(type))) {
+          // 全部都是有效的记录类型，表示所有域名的这些记录类型
+          return {
+            domain: '*', // 使用通配符表示所有域名
+            recordTypes: types
+          };
+        } else {
+          // 当作域名处理
+          return {
+            domain: line,
+            recordTypes: null // null表示所有类型
+          };
+        }
+      }
+    });
+}
+
+// 格式化域名显示
+function formatDomainDisplay(domains) {
+  if (!domains || domains.length === 0) return '所有域名';
+  
+  return domains.map(item => {
+    if (typeof item === 'string') {
+      return item;
+    }
+    if (item.recordTypes && item.recordTypes.length > 0) {
+      return `${item.domain}:${item.recordTypes.join(',')}`;
+    }
+    return item.domain;
+  }).join(', ');
+}
+
+// 获取支持的DNS记录类型
+export function getSupportedRecordTypes() {
+  return [
+    'A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'PTR', 'SRV', 'CAA', 'HTTPS', 'SVCB'
+  ];
+}
+
 // 获取所有DNS提供商
 export async function getDNSProviders(storage) {
   if ('get' in storage) {
@@ -55,18 +126,41 @@ export async function saveDNSProvider(storage, providerData) {
   if (providerData.domains && Array.isArray(providerData.domains)) {
     // 已经是数组，保持不变
   } else if (typeof providerData.domains === 'string') {
-    // 如果是字符串，按行分割
-    providerData.domains = providerData.domains.split('\n').map(d => d.trim()).filter(d => d);
+    // 如果是字符串，按行分割并解析域名和记录类型
+    providerData.domains = parseDomainList(providerData.domains);
   } else {
     // 默认为空数组
     providerData.domains = [];
   }
   
+  // 处理排除域名列表
+  if (providerData.excludeDomains && Array.isArray(providerData.excludeDomains)) {
+    // 已经是数组，保持不变
+  } else if (typeof providerData.excludeDomains === 'string') {
+    // 如果是字符串，按行分割并解析域名和记录类型
+    providerData.excludeDomains = parseDomainList(providerData.excludeDomains);
+  } else {
+    // 默认为空数组
+    providerData.excludeDomains = [];
+  }
+  
+
+  
   // 设置显示用的domain字段
   if (providerData.domains && providerData.domains.length > 0) {
-    providerData.domain = providerData.domains.join(', ');
+    providerData.domain = formatDomainDisplay(providerData.domains);
   } else {
     providerData.domain = '所有域名';
+  }
+  
+  // 设置默认角色
+  if (!providerData.role) {
+    providerData.role = 'source';
+  }
+  
+  // 确保sourceProviderIds是数组
+  if (!providerData.sourceProviderIds) {
+    providerData.sourceProviderIds = [];
   }
   
   // 如果提供了ID，则更新现有提供商
@@ -157,7 +251,6 @@ export function getSupportedProviderTypes() {
     { id: 'dnspod', name: 'DNSPod' },
     { id: 'godaddy', name: 'GoDaddy' },
     { id: 'namecheap', name: 'Namecheap' },
-    { id: 'huaweicloud', name: '华为云' },
-    { id: 'custom', name: '自定义' }
+    { id: 'huaweicloud', name: '华为云' }
   ];
 } 

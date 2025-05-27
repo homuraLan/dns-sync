@@ -18,10 +18,11 @@
   "description": "DNS同步工具，自动将一个DNS提供商的记录同步到其他提供商",
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250525.0",
+    "@tsndr/cloudflare-worker-jwt": "^3.1.7",
     "hono": "^3.12.12",
     "itty-router": "^4.2.2"
   },
   "devDependencies": {
     "wrangler": "^4.16.1"
   }
-} 
+}

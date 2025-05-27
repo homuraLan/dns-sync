@@ -9,11 +9,10 @@ compatibility_date = "2023-05-26"
 
 # KV存储配置示例（二选一：KV或D1）
 # 替换为你自己的命名空间ID
-# [kv_namespaces]
-# [[kv_namespaces]]
-# binding = "KV"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# preview_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # 开发环境使用
+[[kv_namespaces]]
+binding = "KV"
+id = "66588457631a43eda90225ebd193c70b"
+preview_id = "2e672673d3624255a6a62ed5a7680886"  # 开发环境使用
 
 # D1数据库配置示例（二选一：KV或D1）
 # 替换为你自己的数据库ID
